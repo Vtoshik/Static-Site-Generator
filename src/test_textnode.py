@@ -59,6 +59,71 @@ class TestTextNode(unittest.TestCase):
         self.assertEqual(html_node.value, "")
         self.assertEqual(html_node.props, {"src": "https://www.boot.dev/courses", "alt": "This is a image node"})
 
+    def test_split_nodes_bad_delimiter(self):
+        node = TextNode("This is *bold without end", TextType.TEXT)
+        with self.assertRaises(Exception) as cm:
+            split_nodes_delimiter([node], "*", TextType.BOLD)
+
+        self.assertEqual(
+            str(cm.exception),
+            "Invalid Markdown syntax: unmatched or missing closing delimiter"
+        )
+
+    def test_split_nodes_not_text_type(self):
+        node = TextNode("code block", TextType.CODE)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(new_nodes, [node])
+
+    def test_split_nodes_correctness(self):
+        node = TextNode("This is text with a `code block` word", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(new_nodes, 
+            [
+                TextNode("This is text with a ", TextType.TEXT),
+                TextNode("code block", TextType.CODE),
+                TextNode(" word", TextType.TEXT), 
+            ]
+        )
+
+    def test_split_nodes_double_asterisks_bold(self):
+        node = TextNode("This is **bold** text", TextType.TEXT)
+        result = split_nodes_delimiter([node], "**", TextType.BOLD)
+        self.assertEqual(result, [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" text", TextType.TEXT),
+        ])
+
+    def test_split_nodes_underscore_italic(self):
+        node = TextNode("Some _italic_ text", TextType.TEXT)
+        result = split_nodes_delimiter([node], "_", TextType.ITALIC)
+        self.assertEqual(result, [
+            TextNode("Some ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" text", TextType.TEXT),
+        ])
+
+    def test_split_nodes_multiple_delimiters(self):
+        node = TextNode("Text before `code1` middle `code2` end", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(result, [
+            TextNode("Text before ", TextType.TEXT),
+            TextNode("code1", TextType.CODE),
+            TextNode(" middle ", TextType.TEXT),
+            TextNode("code2", TextType.CODE),
+            TextNode(" end", TextType.TEXT),
+        ])
+
+    def test_split_nodes_empty_between_delimiters(self):
+        node = TextNode("before `` after", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(result, [
+            TextNode("before ", TextType.TEXT),
+            TextNode("", TextType.CODE),
+            TextNode(" after", TextType.TEXT),
+        ])
+
+
 
 if __name__ == "__main__":
     unittest.main()
