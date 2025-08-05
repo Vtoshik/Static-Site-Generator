@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+import sys
 from markdown_utils import generate_pages_recursive
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -22,7 +23,7 @@ def copy_directory(src, dst):
     # Remove destination directory if it exists
     if os.path.exists(dst):
         try:
-            logging.info(f"Removing existing desination directory: {dst}")
+            logging.info(f"Removing existing destination directory: {dst}")
             shutil.rmtree(dst)
         except Exception as e:
             logging.error(f"Failed to remove {dst}: {str(e)}")
@@ -49,26 +50,28 @@ def copy_directory(src, dst):
 def main():
     """
     Main function to generate the static site.
-    - Deletes the public directory if it exists.
-    - Copies static files from static to public.
+    - Deletes the docs directory if it exists.
+    - Copies static files from static to docs.
     - Generates HTML pages for all Markdown files in content/ using template.html.
+    - Uses a configurable basepath from CLI argument (defaults to '/').
     """
-    public_dir = "public"
+    public_dir = "docs"
     static_dir = "static"
     content_dir = "content"
     template_path = "template.html"
+    basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
 
     try:
-        # Delete the public directory if it exists
+        # Delete the docs directory if it exists
         if os.path.exists(public_dir):
-            logging.info(f"Removing existing public directory: {public_dir}")
+            logging.info(f"Removing existing docs directory: {public_dir}")
             shutil.rmtree(public_dir)
 
-        # Copy static files to public
+        # Copy static files to docs
         copy_directory(static_dir, public_dir)
 
-        # Generate HTML pages for all Markdown files
-        generate_pages_recursive(content_dir, template_path, public_dir)
+        # Generate HTML pages for all Markdown files with basepath
+        generate_pages_recursive(content_dir, template_path, public_dir, basepath)
 
     except Exception as e:
         logging.error(f"Error during site generation: {str(e)}")

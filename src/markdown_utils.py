@@ -1,10 +1,22 @@
-import os 
+import os
 import logging
 from markdown_blocks import markdown_to_html_node
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def extract_title(markdown):
+    """
+    Extracts the h1 header from Markdown text.
+    
+    Args:
+        markdown (str): The Markdown text to process.
+        
+    Returns:
+        str: The text of the h1 header (without # and leading/trailing whitespace).
+        
+    Raises:
+        ValueError: If no h1 header found in the Markdown text.
+    """
     blocks = markdown.split("\n\n")
     for block in blocks:
         lines = block.strip().split("\n")
@@ -14,7 +26,7 @@ def extract_title(markdown):
                 return line[2:].strip()
     raise ValueError("No h1 header found in Markdown")
 
-def generate_page(from_path,template_path,dest_path):
+def generate_page(from_path, template_path, dest_path, basepath="/"):
     """
     Generate an HTML page from a Markdown file using a template.
 
@@ -22,6 +34,7 @@ def generate_page(from_path,template_path,dest_path):
         from_path (str): Path to the input Markdown file.
         template_path (str): Path to the HTML template file.
         dest_path (str): Path where the output HTML file will be written.
+        basepath (str): Base path for URLs (e.g., '/' or '/my-site/'). Defaults to '/'.
 
     Raises:
         FileNotFoundError: If the Markdown or template file does not exist.
@@ -54,6 +67,10 @@ def generate_page(from_path,template_path,dest_path):
     final_content = template_content.replace("{{ Title }}", title)
     final_content = final_content.replace("{{ Content }}", html_content)
 
+    # Replace href="/ and src="/ with basepath
+    final_content = final_content.replace('href="/', f'href="{basepath}')
+    final_content = final_content.replace('src="/', f'src="{basepath}')
+
     # Create destination directory if it doesn't exist
     dest_dir = os.path.dirname(dest_path)
     if dest_dir:
@@ -64,8 +81,7 @@ def generate_page(from_path,template_path,dest_path):
         f.write(final_content)
     logging.info(f"Generated HTML file at {dest_path}")
 
-
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath="/"):
     """
     Recursively crawl the content directory and generate HTML pages for each Markdown file.
 
@@ -73,6 +89,7 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
         dir_path_content (str): Path to the content directory containing Markdown files.
         template_path (str): Path to the HTML template file.
         dest_dir_path (str): Path to the destination directory for generated HTML files.
+        basepath (str): Base path for URLs (e.g., '/' or '/my-site/'). Defaults to '/'.
 
     Raises:
         FileNotFoundError: If the content directory or template file does not exist.
@@ -102,7 +119,7 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
 
                 # Generate the HTML page
                 try:
-                    generate_page(markdown_path, template_path, dest_path)
+                    generate_page(markdown_path, template_path, dest_path, basepath)
                 except Exception as e:
                     logging.error(f"Failed to generate page for {markdown_path}: {str(e)}")
                     raise
